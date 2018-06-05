@@ -12,6 +12,7 @@ const { s3Mixin } = require('./s3');
 const { sftpMixin } = require('./sftp');
 const { baseProtocol } = require('./protocol');
 const { CollectionConfigStore } = require('@cumulus/common');
+const kinesis = require('@cumulus/common/kinesis');
 
 /**
  * This is a base class for discovering PDRs
@@ -152,15 +153,19 @@ class Parse {
    */
   async ingest() {
     // download the PDR
+    let actionId = kinesis.sendStart({}, 'DownloadPdr');
     const downloadDir = await this.createDownloadDirectory();
     const pdrLocalPath = path.join(downloadDir, this.pdr.name);
     const pdrRemotePath = path.join(this.pdr.path, this.pdr.name);
     await this.download(pdrRemotePath, pdrLocalPath);
+    kinesis.sendEnd({}, 'DownloadPdr', actionId);
 
     let parsedPdr;
     try {
       // parse the PDR
+      actionId = kinesis.sendStart({}, 'ParsePdr');
       parsedPdr = await this.parse(pdrLocalPath);
+      kinesis.sendEnd({}, 'ParsePdr', actionId);
 
       // upload only if the parse was successful
       await this.upload(

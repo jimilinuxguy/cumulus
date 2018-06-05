@@ -6,6 +6,7 @@ const { IncompleteError } = require('@cumulus/common/errors');
 const log = require('@cumulus/common/log');
 const { justLocalRun } = require('@cumulus/common/local-helpers');
 const pLimit = require('p-limit');
+const kinesis = require('@cumulus/common/kinesis');
 
 // The default number of times to re-check for completion
 const defaultRetryLimit = 30;
@@ -60,6 +61,7 @@ function groupExecutionsByStatus(executions) {
  * @returns {undefined} - no return value
  */
 function logStatus(output) {
+  log.info('Logging status');
   log.info({
     running: output.running.length,
     completed: output.completed.length,
@@ -160,6 +162,11 @@ async function checkPdrStatuses(event) {
   const concurrencyLimit = process.env.CONCURRENCY || 10;
   const limit = pLimit(concurrencyLimit);
 
+  // Used for performance profiling
+  global.transactionId = event.config.transactionId;
+
+  log.info('Checking PDR statuses');
+
   const promisedExecutionDescriptions = runningExecutionArns.map((executionArn) =>
     limit(() => describeExecutionStatus(executionArn)));
 
@@ -170,6 +177,13 @@ async function checkPdrStatuses(event) {
       const exceededLimit = counter >= getLimitFromEvent(event);
 
       const executionsAllDone = groupedExecutions.running.length === 0;
+
+      if (executionsAllDone) {
+        log.info(`Sending kinesis end for PDR ${event.input.pdr}`);
+        kinesis.sendEnd({}, 'ProcessPdr', event.input.pdr);
+      } else {
+        log.info('Executions not done');
+      }
 
       if (!executionsAllDone && exceededLimit) {
         throw new IncompleteError(`PDR didn't complete after ${counter} checks`);

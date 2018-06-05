@@ -6,6 +6,11 @@ const pdr = require('@cumulus/ingest/pdr');
 const errors = require('@cumulus/common/errors');
 const log = require('@cumulus/common/log');
 const local = require('@cumulus/common/local-helpers');
+const kinesis = require('@cumulus/common/kinesis');
+
+const a = {a: "A", b: "B"};
+const val = a.toString();
+console.log(val);
 
 /**
  * Discover PDRs
@@ -21,6 +26,9 @@ function discoverPdrs(event) {
     const collection = config.collection;
     const provider = config.provider;
     // FIXME Can config.folder not be used?
+
+    // Used for performance profiling
+    global.transactionId = config.transactionId;
 
     log.info('Received the provider', { provider: get(provider, 'id') });
 
@@ -39,6 +47,11 @@ function discoverPdrs(event) {
 
     return discover.discover()
       .then((pdrs) => {
+        pdrs.forEach((file) => {
+          const actionTransactionId = `${file.name}-${global.transactionId}`;
+          log.info(`Sending kinesis start event for PDR ${file.name}`);
+          kinesis.sendStart({}, 'ProcessPdr', actionTransactionId);
+        });
         if (discover.connected) discover.end();
         return { pdrs };
       })
