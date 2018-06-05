@@ -6,6 +6,7 @@ const lock = require('@cumulus/ingest/lock');
 const granule = require('@cumulus/ingest/granule');
 const log = require('@cumulus/common/log');
 const { justLocalRun } = require('@cumulus/common/local-helpers');
+const kinesis = require('@cumulus/common/kinesis');
 
 /**
  * Ingest a list of granules
@@ -30,7 +31,9 @@ async function download(ingest, bucket, provider, granules) {
 
   for (const g of granules) {
     try {
+      const actionId = kinesis.sendStart({}, 'DownloadGranule');
       const r = await ingest.ingest(g);
+      kinesis.sendEnd({}, 'DownloadGranule', actionId);
       updatedGranules.push(r);
     }
     catch (e) {
@@ -61,7 +64,8 @@ exports.syncGranule = function syncGranule(event) {
   const context = config.context;  //PGC const collection = config.collection;
   const forceDownload = config.forceDownload || false;
 
-  console.log("SyncGranule...");
+  // Used for performance profiling
+  global.transactionId = config.transactionId;
 
   if (!provider) {
     const err = new errors.ProviderNotFound('Provider info not provided');
@@ -82,9 +86,9 @@ exports.syncGranule = function syncGranule(event) {
       if (ingest.end) ingest.end();
       console.log(`Found Granules: ${JSON.stringify(updatedGranules)}`);
       console.log(`Missing Granules: ${JSON.stringify(missingGranules)}`);
-      
+
       const output = { granules: updatedGranules, missingGranules: missingGranules };
-      
+
       // if (collection.process) output.process = collection.process;
 
       return output;

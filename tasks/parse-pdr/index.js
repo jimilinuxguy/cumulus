@@ -26,6 +26,9 @@ function parsePdr(event) {
   const input = get(event, 'input');
   const provider = get(config, 'provider', null);
 
+  // Used for performance profiling
+  global.transactionId = config.transactionId;
+
   const Parse = pdr.selector('parse', provider.protocol);
   const parse = new Parse(
     input.pdr,
