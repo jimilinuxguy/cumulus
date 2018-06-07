@@ -31,8 +31,10 @@ async function download(ingest, bucket, provider, granules) {
 
   for (const g of granules) {
     try {
+      global.dataType = g.granuleId.split('.')[0];
       const actionId = kinesis.sendStart({}, 'DownloadGranule');
       const r = await ingest.ingest(g);
+      global.dataType = g.granuleId.split('.')[0];
       kinesis.sendEnd({}, 'DownloadGranule', actionId);
       updatedGranules.push(r);
     }

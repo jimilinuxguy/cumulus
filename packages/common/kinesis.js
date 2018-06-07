@@ -8,15 +8,17 @@ const log = require('./log');
  *
  * @param {string} actionName - Name of the action the event is associated with, eg., 'UnTarArchive'
  * @param {string} eventType - Type of the even - either 'start' or 'end'
- * @param {string} transactionId - The unique identifier of the larger transaction with which
+ * @param {string} transactionId - The unique identifier of the larger transactions with which
  *                                  this event is associated
+ * @param {string} dataType - The data type as given by the PDR entry
  * @param {string} actionId - The UUID associated with a particular instance of an action
  * @param {string} streamName - The stream to which the event should be sent
  * @param {string} region - The AWS region in which the stream lives
  */
-const sendEvent = async (actionName, eventType, transactionId, actionId, streamName, region) => {
+const sendEvent = async (actionName, eventType, transactionId, dataType, actionId, streamName, region) => {
   const data = {
     'transaction-id': transactionId,
+    'data-type': dataType,
     'time-stamp': Date.now(),
     type: eventType,
     name: actionName,
@@ -50,20 +52,22 @@ const sendEvent = async (actionName, eventType, transactionId, actionId, streamN
 exports.sendStart = (config, actionName, actionId = null) => {
   const aid = actionId || uuidv4();
   const transactionId = config.transactionId || global.transactionId;
+  const dataType = global.dataType || 'N/A';
   const streamName = config.profiling_stream_name || 'gitc-performance-test';
   const region = config.profiling_region || 'us-east-1';
 
-  sendEvent(actionName, 'start', transactionId, aid, streamName, region);
+  sendEvent(actionName, 'start', transactionId, dataType, aid, streamName, region);
 
   return aid;
 };
 
 exports.sendEnd = (config, actionName, actionId) => {
   const transactionId = config.transactionId || global.transactionId;
+  const dataType = global.dataType || 'N/A';
   const streamName = config.profiling_stream_name || 'gitc-performance-test';
   const region = config.profiling_region || 'us-east-1';
 
-  sendEvent(actionName, 'end', transactionId, actionId, streamName, region);
+  sendEvent(actionName, 'end', transactionId, dataType, actionId, streamName, region);
 };
 
 
