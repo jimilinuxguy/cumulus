@@ -24,8 +24,9 @@ class Discover {
   constructor(
     stack,
     bucket,
-    collection,
+    //PGC collection,
     provider,
+    providerPath, //PGC
     useList = false,
     folder = 'pdrs',
     force = false
@@ -36,7 +37,7 @@ class Discover {
 
     this.stack = stack;
     this.bucket = bucket;
-    this.collection = collection;
+    //PGC this.collection = collection;
     this.provider = provider;
     this.folder = folder;
     this.useList = useList;
@@ -45,7 +46,7 @@ class Discover {
     // get authentication information
     this.port = get(this.provider, 'port', 21);
     this.host = get(this.provider, 'host', null);
-    this.path = this.collection.provider_path || '/';
+    this.path = providerPath; //PGC this.collection.provider_path || '/';
     this.username = get(this.provider, 'username', null);
     this.password = get(this.provider, 'password', null);
   }

@@ -37,11 +37,12 @@ test.before(async () => {
   await s3().createBucket({ Bucket: context.internal }).promise();
 
   const collectionConfigStore = new CollectionConfigStore(context.internal, context.stack);
+  const dataVersion = 6;
   await Promise.all([
-    collectionConfigStore.put('MOD09GQ', { name: 'MOD09GQ', granuleExtractionId: '(.*)' }),
-    collectionConfigStore.put('AST_L1A', { name: 'AST_L1A', granuleExtractionId: '(.*)' }),
-    collectionConfigStore.put('MOD87GQ', { name: 'MOD87GQ', granuleExtractionId: '(.*)' }),
-    collectionConfigStore.put('MYD13A1', { name: 'MYD13A1', granuleExtractionId: '(.*)' })
+    collectionConfigStore.put('MOD09GQ', dataVersion, { name: 'MOD09GQ', version: dataVersion, granuleExtractionId: '(.*)' }),
+    collectionConfigStore.put('AST_L1A', dataVersion, { name: 'AST_L1A', version: dataVersion, granuleExtractionId: '(.*)' }),
+    collectionConfigStore.put('MOD87GQ', dataVersion, { name: 'MOD87GQ', version: dataVersion, granuleExtractionId: '(.*)' }),
+    collectionConfigStore.put('MYD13A1', dataVersion, { name: 'MYD13A1', version: dataVersion, granuleExtractionId: '(.*)' })
   ]);
 
   // download and unzip the message adapter

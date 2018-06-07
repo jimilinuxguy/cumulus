@@ -125,7 +125,9 @@ async function loadPdrFile(pdrFilePath) {
 // FIXME Figure out what this function does and document it
 async function granuleFromFileGroup(fileGroup, pdrName, collectionConfigStore) { // eslint-disable-line require-jsdoc, max-len
   if (!fileGroup.get('DATA_TYPE')) throw new PDRParsingError('DATA_TYPE is missing');
+  if (!fileGroup.get('DATA_VERSION')) throw new PDRParsingError('DATA_VERSION is missing');
   const dataType = fileGroup.get('DATA_TYPE').value;
+  const version = fileGroup.get('DATA_VERSION').value; // PGC
 
   // get all the file specs in each group
   const specs = fileGroup.objects('FILE_SPEC');
@@ -133,10 +135,11 @@ async function granuleFromFileGroup(fileGroup, pdrName, collectionConfigStore) {
 
   const files = specs.map(parseSpec.bind(null, pdrName));
 
-  const collectionConfig = await collectionConfigStore.get(dataType);
+  const collectionConfig = await collectionConfigStore.get(dataType, version);
 
   return {
     dataType,
+    version,    //PGC
     files,
     granuleId: extractGranuleId(files[0].name, collectionConfig.granuleIdExtraction),
     granuleSize: files.reduce((total, file) => total + file.fileSize, 0)

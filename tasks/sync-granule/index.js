@@ -5,6 +5,7 @@ const errors = require('@cumulus/common/errors');
 const lock = require('@cumulus/ingest/lock');
 const granule = require('@cumulus/ingest/granule');
 const log = require('@cumulus/common/log');
+const { justLocalRun } = require('@cumulus/common/local-helpers');
 
 /**
  * Ingest a list of granules
@@ -17,13 +18,12 @@ const log = require('@cumulus/common/log');
  */
 async function download(ingest, bucket, provider, granules) {
   const updatedGranules = [];
-
+  const missingGranules = []; //PGC
   const proceed = await lock.proceed(bucket, provider, granules[0].granuleId);
 
   if (!proceed) {
     const err = new errors.ResourcesLockedError(
-      'Download lock remained in place after multiple tries'
-    );
+      'Download lock remained in place after multiple tries');
     log.error(err);
     throw err;
   }
@@ -34,14 +34,17 @@ async function download(ingest, bucket, provider, granules) {
       updatedGranules.push(r);
     }
     catch (e) {
-      await lock.removeLock(bucket, provider.id, g.granuleId);
-      log.error(e);
-      throw e;
+      //await lock.removeLock(bucket, provider.id, g.granuleId);
+      //log.error(e);
+      //throw e;
+      log.error(`Error: ${JSON.stringify(e)}`);
+      log.error(`Error Downloading File: ${JSON.stringify(g.files)}`);
+      missingGranules.push(g)
     }
   }
 
   await lock.removeLock(bucket, provider.id, granules[0].granuleId);
-  return updatedGranules;
+  return { updatedGranules, missingGranules };
 }
 
 /**
@@ -55,8 +58,10 @@ exports.syncGranule = function syncGranule(event) {
   const input = event.input;
   const buckets = config.buckets;
   const provider = config.provider;
-  const collection = config.collection;
+  const context = config.context;  //PGC const collection = config.collection;
   const forceDownload = config.forceDownload || false;
+
+  console.log("SyncGranule...");
 
   if (!provider) {
     const err = new errors.ProviderNotFound('Provider info not provided');
@@ -67,17 +72,20 @@ exports.syncGranule = function syncGranule(event) {
   const IngestClass = granule.selector('ingest', provider.protocol);
   const ingest = new IngestClass(
     buckets,
-    collection,
+    context,
     provider,
     forceDownload
   );
 
   return download(ingest, buckets.internal, provider, input.granules)
-    .then((granules) => {
+    .then(({ updatedGranules, missingGranules }) => {
       if (ingest.end) ingest.end();
-
-      const output = { granules };
-      if (collection.process) output.process = collection.process;
+      console.log(`Found Granules: ${JSON.stringify(updatedGranules)}`);
+      console.log(`Missing Granules: ${JSON.stringify(missingGranules)}`);
+      
+      const output = { granules: updatedGranules, missingGranules: missingGranules };
+      
+      // if (collection.process) output.process = collection.process;
 
       return output;
     }).catch((e) => {
@@ -122,3 +130,12 @@ exports.handler = function handler(event, context, callback) {
     }
   });
 };
+
+// use node index.js local to invoke this
+// justLocalRun(() => {
+//   const payload = require('../../../gitc-deploy/ingest-sips/messages/sync-granules.json'); // eslint-disable-line global-require, max-len
+//   exports.handler(payload, {}, (e, r) => {
+//     console.log(e);
+//     console.log(JSON.stringify(r, null, '\t')); // eslint-disable-line no-console
+//   });
+// });

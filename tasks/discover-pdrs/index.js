@@ -18,28 +18,35 @@ function discoverPdrs(event) {
     const config = get(event, 'config', {});
     const stack = config.stack;
     const bucket = config.bucket;
-    const collection = config.collection;
+    const providerPath = config.provider_path;  //PGC
+    const filterPdrs = config.filterPdrs || null; //PGC
     const provider = config.provider;
     // FIXME Can config.folder not be used?
 
-    log.info('Received the provider', { provider: get(provider, 'id') });
+    log.info('DiscoverPdrs', { provider: get(provider, 'id') });
 
     const Discover = pdr.selector('discover', provider.protocol);
     const discover = new Discover(
       stack,
       bucket,
-      collection,
       provider,
+      providerPath,
       config.useList,
       'pdrs',
       config.force || false
     );
 
-    log.debug('Starting PDR discovery');
-
     return discover.discover()
       .then((pdrs) => {
         if (discover.connected) discover.end();
+
+        // filter pdrs using filterPDrs
+        if (filterPdrs && pdrs.length) {
+          log.info(`Filtering ${pdrs.length} with ${filterPdrs}`);
+          const fpdrs = pdrs.filter((p) => p.name.match(filterPdrs));
+          return { pdrs: fpdrs };
+        }
+
         return { pdrs };
       })
       .catch((e) => {

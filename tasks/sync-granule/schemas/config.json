@@ -2,7 +2,7 @@
   "title": "SyncGranuleConfig",
   "description": "Describes the config used by the sync-granule task",
   "type": "object",
-  "required": ["buckets", "collection", "provider"],
+  "required": ["buckets", "context", "provider"],
   "properties": {
     "forceDownload": {
       "type": "boolean",
@@ -34,29 +34,15 @@
         "public": { "type": "string" }
       }
     },
-    "collection": {
+    "context": {
       "type": "object",
       "required": [
-        "files",
-        "name"
+        "url_path",
+        "duplicateHandling"
       ],
       "properties": {
-        "name": { "type": "string" },
-        "process": { "type": "string" },
         "url_path": { "type": "string" },
-        "duplicateHandling": { "type": "string" },
-        "files": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["regex", "bucket"],
-            "properties": {
-              "regex": { "type": "string" },
-              "bucket": { "type": "string" },
-              "url_path": { "type": "string" }
-            }
-          }
-        }
+        "duplicateHandling": { "type": "string" }
       }
     }
   }

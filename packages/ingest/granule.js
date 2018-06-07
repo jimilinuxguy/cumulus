@@ -19,6 +19,8 @@ const { ftpMixin } = require('./ftp');
 const { httpMixin } = require('./http');
 const { s3Mixin } = require('./s3');
 const { baseProtocol } = require('./protocol');
+const { CollectionConfigStore } = require('@cumulus/common');
+const log = require('@cumulus/common/log');
 
 class Discover {
   constructor(event) {
@@ -136,7 +138,8 @@ class Discover {
 class Granule {
   constructor(
     buckets,
-    collection,
+    // collection,   //PGC more like a context now
+    context,         // PGC
     provider,
     forceDownload = false
   ) {
@@ -145,10 +148,11 @@ class Granule {
     }
 
     this.buckets = buckets;
-    this.collection = collection;
+    this.context = context;
     this.provider = provider;
 
-    this.collection.url_path = this.collection.url_path || '';
+    // this.collection.url_path = this.collection.url_path || '';
+
     this.port = get(this.provider, 'port', 21);
     this.host = get(this.provider, 'host', null);
     this.username = get(this.provider, 'username', null);
@@ -161,17 +165,31 @@ class Granule {
   async ingest(granule) {
     // for each granule file
     // download / verify checksum / upload
+    const bucket = process.env.internal;
+    const stackName = process.env.stackName;
 
-    const downloadFiles = granule.files
-      .filter((f) => this.filterChecksumFiles(f))
-      .map((f) => this.addBucketToFile(f))
-      .map((f) => this.addUrlPathToFile(f))
-      .map((f) => this.ingestFile(f, this.collection.duplicateHandling));
+    // we need to retrieve the right collection
+    const collectionConfigStore = new CollectionConfigStore(bucket, stackName);
+    this.collection = await collectionConfigStore.get(granule.dataType, granule.version);
 
-    const files = await Promise.all(downloadFiles);
+    let files = [];
+    try {
+      const downloadFiles = granule.files
+        .filter((f) => this.filterChecksumFiles(f))
+        .map((f) => this.addBucketToFile(f))
+        .map((f) => this.addUrlPathToFile(f))
+        .map((f) => this.ingestFile(f, this.context.duplicateHandling));
+
+      files = await Promise.all(downloadFiles);
+    }
+    catch (e) {
+      log.error(e);
+    }
 
     return {
       granuleId: granule.granuleId,
+      dataType: granule.dataType,
+      version: granule.version,
       files
     };
   }
@@ -202,7 +220,6 @@ class Granule {
 
     const fileConfig = this.findCollectionFileConfigForFile(file);
     if (fileConfig) bucket = this.buckets[fileConfig.bucket];
-
     return Object.assign(cloneDeep(file), { bucket });
   }
 
@@ -245,9 +262,9 @@ class Granule {
   filterChecksumFiles(file) {
     if (file.name.indexOf('.md5') > 0) {
       this.checksumFiles[file.name.replace('.md5', '')] = file;
+      log.error(`file failed checksum ${file.name}`);
       return false;
     }
-
     return true;
   }
 
@@ -341,6 +358,7 @@ class Granule {
    * @private
    */
   async ingestFile(file, duplicateHandling) {
+
     // Check if the file exists
     const exists = await aws.s3ObjectExists({
       Bucket: file.bucket,
@@ -376,6 +394,10 @@ class Granule {
       const filename = await this.upload(file.bucket, file.url_path, file.name, fileLocalPath);
 
       return Object.assign({}, file, { filename });
+    }
+    catch (e) {
+      log.error(`ingestFile Error ${JSON.stringify(e)}`);
+      throw e;
     }
     finally {
       // Delete the temp directory

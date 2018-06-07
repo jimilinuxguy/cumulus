@@ -8,11 +8,41 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["granuleId", "files"],
+        "required": ["granuleId", "dataType", "version", "files"],
         "properties": {
-          "granuleId": {
-            "type": "string"
-          },
+          "granuleId": { "type": "string" },
+          "dataType": { "type": "string" },
+          "version": { "type": "number" },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "bucket": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "missingGranules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["granuleId", "dataType", "version", "files"],
+        "properties": {
+          "granuleId": { "type": "string" },
+          "dataType": { "type": "string" },
+          "version": { "type": "number" },
           "files": {
             "type": "array",
             "items": {
