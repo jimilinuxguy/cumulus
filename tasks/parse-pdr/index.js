@@ -34,7 +34,7 @@ function parsePdr(event) {
     provider,
     config.useList
   );
-
+  console.log("ParsePdr ingest...");
   return parse.ingest()
     .then((payload) => {
       if (parse.connected) parse.end();

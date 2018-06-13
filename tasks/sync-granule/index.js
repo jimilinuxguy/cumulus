@@ -61,8 +61,6 @@ exports.syncGranule = function syncGranule(event) {
   const context = config.context;  //PGC const collection = config.collection;
   const forceDownload = config.forceDownload || false;
 
-  console.log("SyncGranule...");
-
   if (!provider) {
     const err = new errors.ProviderNotFound('Provider info not provided');
     log.error(err);

@@ -23,7 +23,7 @@ function discoverPdrs(event) {
     const provider = config.provider;
     // FIXME Can config.folder not be used?
 
-    log.info('DiscoverPdrs', { provider: get(provider, 'id') });
+    log.info('DiscoverPdrs SFTP', JSON.stringify(provider));
 
     const Discover = pdr.selector('discover', provider.protocol);
     const discover = new Discover(

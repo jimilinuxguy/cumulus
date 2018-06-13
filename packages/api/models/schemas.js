@@ -401,6 +401,9 @@ module.exports.provider = {
     updatedAt: {
       type: 'number',
       readonly: true
+    },
+    privateKey: {
+      type: 'string'
     }
   },
   required: [

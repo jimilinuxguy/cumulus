@@ -6,6 +6,9 @@ const { log } = require('@cumulus/common');
 const Crypto = require('./crypto').DefaultProvider;
 const recursion = require('./recursion');
 const { omit } = require('lodash');
+const fs = require('fs');
+const get = require('lodash.get');
+const { S3 } = require('./aws');
 
 module.exports.sftpMixin = (superclass) => class extends superclass {
 
@@ -17,7 +20,8 @@ module.exports.sftpMixin = (superclass) => class extends superclass {
       host: this.host,
       port: this.port || 22,
       user: this.username,
-      password: this.password
+      password: this.password,
+      privateKey: get(this.provider, 'privateKey', null)
     };
 
     this.client = null;
@@ -35,6 +39,19 @@ module.exports.sftpMixin = (superclass) => class extends superclass {
         this.options.user = await Crypto.decrypt(this.username);
         this.decrypted = true;
       }
+    }
+
+    if (this.options.privateKey) {
+      const bucket = process.env.internal;
+      const stackName = process.env.stackName;
+
+      log.info(`Reading PrivateKey: ${this.options.privateKey} bucket: ${bucket}, stack:${stackName}`);
+      const priv = await S3.get(bucket, `${stackName}/crypto/${this.options.privateKey}`);
+      //console.log('Reading Priv:', priv.Body.toString());
+
+      this.options.privateKey = priv.Body.toString();
+    } else {
+      console.log("No private key for sftp...");
     }
 
     return new Promise((resolve, reject) => {
@@ -102,10 +119,10 @@ module.exports.sftpMixin = (superclass) => class extends superclass {
   }
 
   async _list(path) {
-    if (!this.connected) await this.connect();
-
+    if (!this.connected) await this.connect(); 
     return new Promise((resolve, reject) => {
       this.sftp.readdir(path, (err, list) => {
+        console.log(`sftp _list ${path} - err: ${err} - list: ${JSON.stringify(list)}`);
         if (err) {
           if (err.message.includes('No such file')) {
             return resolve([]);
