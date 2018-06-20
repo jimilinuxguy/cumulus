@@ -8,7 +8,7 @@ const recursion = require('./recursion');
 const { omit } = require('lodash');
 const fs = require('fs');
 const get = require('lodash.get');
-const { S3 } = require('./aws');
+const { S3, KMS } = require('./aws');
 
 module.exports.sftpMixin = (superclass) => class extends superclass {
 
@@ -21,7 +21,8 @@ module.exports.sftpMixin = (superclass) => class extends superclass {
       port: this.port || 22,
       user: this.username,
       password: this.password,
-      privateKey: get(this.provider, 'privateKey', null)
+      privateKey: get(this.provider, 'privateKey', null),
+      cmKeyId: get(this.provider, 'cmKeyId', null)
     };
 
     this.client = null;
@@ -44,14 +45,18 @@ module.exports.sftpMixin = (superclass) => class extends superclass {
     if (this.options.privateKey) {
       const bucket = process.env.internal;
       const stackName = process.env.stackName;
-
-      log.info(`Reading PrivateKey: ${this.options.privateKey} bucket: ${bucket}, stack:${stackName}`);
+      // we are assuming that the specified private key is in the S3 crypto directory
+      log.debug(`Reading Key: ${this.options.privateKey} bucket:${bucket},stack:${stackName}`);
       const priv = await S3.get(bucket, `${stackName}/crypto/${this.options.privateKey}`);
-      //console.log('Reading Priv:', priv.Body.toString());
 
-      this.options.privateKey = priv.Body.toString();
-    } else {
-      console.log("No private key for sftp...");
+      if (this.options.cmKeyId) {
+        // we are using AWS KMS and the privateKey is encrypted
+        this.options.privateKey = await KMS.decrypt(priv.Body.toString());
+      }
+      else {
+        // private key is not encrypted... not cool!
+        this.options.privateKey = priv.Body.toString();
+      }
     }
 
     return new Promise((resolve, reject) => {

@@ -404,6 +404,9 @@ module.exports.provider = {
     },
     privateKey: {
       type: 'string'
+    },
+    cmKeyId: {
+      type: 'string'
     }
   },
   required: [
