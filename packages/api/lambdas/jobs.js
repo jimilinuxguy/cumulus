@@ -81,12 +81,12 @@ async function checkExecution(arn, url, timestamp, esClient) {
   if (r.status === 'running') {
     // check if it the execution has passed the five hours limit
     const now = Date.now();
-    const late = (now - timestamp) > 18000000;
+    const late = (now - timestamp) > 18000000 * 3;
 
     if (late) {
       error = {
         Error: 'Stopped By Cumulus',
-        Cause: 'Execution was stopped by Cumulus because it did not finish in 5 hours.'
+        Cause: 'Execution was stopped by Cumulus because it did not finish in 15 hours.'
       };
 
       await StepFunction.stop(

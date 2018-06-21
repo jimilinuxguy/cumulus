@@ -101,7 +101,7 @@ class CollectionConfigStore {
   /**
    * Return the S3 key pointing to the collection config
    *
-   * @param {string} collectionId - the collection id aka: name__version 
+   * @param {string} collectionId - the collection id aka: name__version
    * @returns {string} the S3 key where the collection config is located
    *
    * @private
