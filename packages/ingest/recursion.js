@@ -27,10 +27,12 @@ async function recursion(fn, originalPath, currentPath = null, position = 0) {
     path = rules[position];
   }
 
-  log.info(`Listing ${path}`);
+  log.info(`recursion Listing ${path}`);
 
   // get list of current path
   const list = await fn(path);
+
+  console.log(JSON.stringify(list));
 
   // loop try what is returned
   for (const item of list) {
@@ -79,6 +81,8 @@ async function recursion(fn, originalPath, currentPath = null, position = 0) {
       files = files.concat(item);
     }
   }
+
+  log.info(`recursion files ${JSON.stringify(files)}`);
 
   return files;
 }

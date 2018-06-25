@@ -6,6 +6,9 @@ const { log } = require('@cumulus/common');
 const Crypto = require('./crypto').DefaultProvider;
 const recursion = require('./recursion');
 const { omit } = require('lodash');
+const fs = require('fs');
+const get = require('lodash.get');
+const { S3, KMS } = require('./aws');
 
 module.exports.sftpMixin = (superclass) => class extends superclass {
 
@@ -17,7 +20,9 @@ module.exports.sftpMixin = (superclass) => class extends superclass {
       host: this.host,
       port: this.port || 22,
       user: this.username,
-      password: this.password
+      password: this.password,
+      privateKey: get(this.provider, 'privateKey', null),
+      cmKeyId: get(this.provider, 'cmKeyId', null)
     };
 
     this.client = null;
@@ -34,6 +39,23 @@ module.exports.sftpMixin = (superclass) => class extends superclass {
       if (this.username) {
         this.options.user = await Crypto.decrypt(this.username);
         this.decrypted = true;
+      }
+    }
+
+    if (this.options.privateKey) {
+      const bucket = process.env.internal;
+      const stackName = process.env.stackName;
+      // we are assuming that the specified private key is in the S3 crypto directory
+      log.debug(`Reading Key: ${this.options.privateKey} bucket:${bucket},stack:${stackName}`);
+      const priv = await S3.get(bucket, `${stackName}/crypto/${this.options.privateKey}`);
+
+      if (this.options.cmKeyId) {
+        // we are using AWS KMS and the privateKey is encrypted
+        this.options.privateKey = await KMS.decrypt(priv.Body.toString());
+      }
+      else {
+        // private key is not encrypted... not cool!
+        this.options.privateKey = priv.Body.toString();
       }
     }
 
@@ -102,10 +124,10 @@ module.exports.sftpMixin = (superclass) => class extends superclass {
   }
 
   async _list(path) {
-    if (!this.connected) await this.connect();
-
+    if (!this.connected) await this.connect(); 
     return new Promise((resolve, reject) => {
       this.sftp.readdir(path, (err, list) => {
+        console.log(`sftp _list ${path} - err: ${err} - list: ${JSON.stringify(list)}`);
         if (err) {
           if (err.message.includes('No such file')) {
             return resolve([]);
