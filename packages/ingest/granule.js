@@ -176,6 +176,7 @@ class Granule {
     this.password = get(this.provider, 'password', null);
     this.checksumFiles = {};
 
+    // TODO As far as I can tell, this is not used
     this.forceDownload = forceDownload;
     this.fileStagingDir = fileStagingDir;
   }
@@ -192,8 +193,8 @@ class Granule {
     // download / verify checksum / upload
 
     const downloadFiles = granule.files
-      .filter((f) => this.filterChecksumFiles(f))
-      .map((f) => this.ingestFile(f, bucket, this.collection.duplicateHandling));
+      .filter((file) => this.filterChecksumFiles(file))
+      .map((file) => this.ingestFile(file, bucket, this.collection.duplicateHandling));
 
     const files = await Promise.all(downloadFiles);
 
@@ -215,8 +216,7 @@ class Granule {
     let urlPath = '';
 
     this.collection.files.forEach((fileDef) => {
-      const test = new RegExp(fileDef.regex);
-      const match = file.name.match(test);
+      const match = file.name.match(fileDef.regex);
 
       if (match && fileDef.url_path) {
         urlPath = fileDef.url_path;
@@ -383,7 +383,7 @@ class Granule {
 
     // if not enabled, make it enabled
     if (versioning.Status !== 'Enabled') {
-      aws.s3().putBucketVersioning({
+      await aws.s3().putBucketVersioning({
         Bucket: bucket,
         VersioningConfiguration: { Status: 'Enabled' }
       }).promise();
@@ -449,7 +449,7 @@ class Granule {
     if (exists && duplicateHandling === 'skip') return file;
 
     // Enable bucket versioning
-    if (duplicateHandling === 'version') this.enableBucketVersioning(file.bucket);
+    if (duplicateHandling === 'version') this.enableBucketVersioning(bucket);
 
     // Either the file does not exist yet, or it does but
     // we are replacing it with a more recent one or

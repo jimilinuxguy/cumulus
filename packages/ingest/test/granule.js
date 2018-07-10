@@ -4,7 +4,12 @@ const test = require('ava');
 const discoverPayload = require('@cumulus/test-data/payloads/new-message-schema/discover.json');
 const ingestPayload = require('@cumulus/test-data/payloads/new-message-schema/ingest.json');
 const { randomString } = require('@cumulus/common/test-utils');
-const { buildS3Uri, s3 } = require('@cumulus/common/aws');
+const {
+  buildS3Uri,
+  recursivelyDeleteS3Bucket,
+  s3,
+  s3Join
+} = require('@cumulus/common/aws');
 
 const {
   selector,
@@ -365,4 +370,240 @@ test('moveGranuleFiles only moves granule files specified with regex', async (t)
     t.is(list.Contents.length, 1);
     t.is(list.Contents[0].Key, 'destination/included-in-move.txt');
   });
+});
+
+test('When a file already exists in S3 and collection.duplicateHandling is not set, the file is replaced', async (t) => { // eslint-disable-line max-len
+  const sourceBucketName = randomString();
+  const destinationBucketName = randomString();
+  await Promise.all([
+    s3().createBucket({ Bucket: sourceBucketName }).promise(),
+    s3().createBucket({ Bucket: destinationBucketName }).promise()
+  ]);
+
+  try {
+    const fileName = randomString();
+    const fileStagingDir = randomString();
+    const destinationKey = s3Join([fileStagingDir, fileName]);
+
+    // Pre-populate the old file in the destination bucket
+    await s3().putObject({
+      Bucket: destinationBucketName,
+      Key: destinationKey,
+      Body: 'original file content'
+    }).promise();
+
+    // Upload the new file to the source bucket
+    const sourcePath = randomString();
+    const sourceKey = s3Join([sourcePath, fileName]);
+    await s3().putObject({
+      Bucket: sourceBucketName,
+      Key: sourceKey,
+      Body: 'new file content'
+    }).promise();
+
+    const buckets = '';
+    const collection = {
+      files: [
+        { regex: '.' }
+      ]
+    };
+    const provider = {
+      host: sourceBucketName
+    };
+    const forceDownload = null;
+
+    const granuleIngester = new S3Granule(
+      buckets,
+      collection,
+      provider,
+      fileStagingDir,
+      forceDownload
+    );
+
+    const granule = {
+      files: [
+        {
+          path: sourcePath,
+          name: fileName
+        }
+      ]
+    };
+
+    // Call granuleIngester.ingest(granule, bucket) and ingest the file that's already in S3
+    await granuleIngester.ingest(granule, destinationBucketName);
+
+    // Verify that the file has been changed in S3
+    const getObjectResponse = await s3().getObject({
+      Bucket: destinationBucketName,
+      Key: destinationKey
+    }).promise();
+
+    t.is(getObjectResponse.Body.toString(), 'new file content');
+  }
+  finally {
+    await Promise.all([
+      recursivelyDeleteS3Bucket(sourceBucketName),
+      recursivelyDeleteS3Bucket(destinationBucketName)
+    ]);
+  }
+});
+
+test('When a file already exists in S3 and collection.duplicateHandling is set to "skip", the file is not replaced', async (t) => { // eslint-disable-line max-len
+  const sourceBucketName = randomString();
+  const destinationBucketName = randomString();
+  await Promise.all([
+    s3().createBucket({ Bucket: sourceBucketName }).promise(),
+    s3().createBucket({ Bucket: destinationBucketName }).promise()
+  ]);
+
+  try {
+    const fileName = randomString();
+    const fileStagingDir = randomString();
+    const destinationKey = s3Join([fileStagingDir, fileName]);
+
+    // Pre-populate the old file in the destination bucket
+    await s3().putObject({
+      Bucket: destinationBucketName,
+      Key: destinationKey,
+      Body: 'original file content'
+    }).promise();
+
+    // Upload the new file to the source bucket
+    const sourcePath = randomString();
+    const sourceKey = s3Join([sourcePath, fileName]);
+    await s3().putObject({
+      Bucket: sourceBucketName,
+      Key: sourceKey,
+      Body: 'new file content'
+    }).promise();
+
+    const buckets = '';
+    const collection = {
+      duplicateHandling: 'skip',
+      files: [
+        { regex: '.' }
+      ]
+    };
+    const provider = {
+      host: sourceBucketName
+    };
+    const forceDownload = null;
+
+    const granuleIngester = new S3Granule(
+      buckets,
+      collection,
+      provider,
+      fileStagingDir,
+      forceDownload
+    );
+
+    const granule = {
+      files: [
+        {
+          path: sourcePath,
+          name: fileName
+        }
+      ]
+    };
+
+    // Call granuleIngester.ingest(granule, bucket) and ingest the file that's already in S3
+    await granuleIngester.ingest(granule, destinationBucketName);
+
+    // Verify that the file has been changed in S3
+    const getObjectResponse = await s3().getObject({
+      Bucket: destinationBucketName,
+      Key: destinationKey
+    }).promise();
+
+    t.is(getObjectResponse.Body.toString(), 'original file content');
+  }
+  finally {
+    await Promise.all([
+      recursivelyDeleteS3Bucket(sourceBucketName),
+      recursivelyDeleteS3Bucket(destinationBucketName)
+    ]);
+  }
+});
+
+test.only('When collection.duplicateHandling is set to "version", bucket versioning is enabled on the destination bucket', async (t) => { // eslint-disable-line max-len
+  const sourceBucketName = randomString();
+  const destinationBucketName = randomString();
+  await Promise.all([
+    s3().createBucket({ Bucket: sourceBucketName }).promise(),
+    s3().createBucket({ Bucket: destinationBucketName }).promise()
+  ]);
+
+  try {
+    const fileName = randomString();
+    const fileStagingDir = randomString();
+    const destinationKey = s3Join([fileStagingDir, fileName]);
+
+    // Upload the new file to the source bucket
+    const sourcePath = randomString();
+    const sourceKey = s3Join([sourcePath, fileName]);
+    await s3().putObject({
+      Bucket: sourceBucketName,
+      Key: sourceKey,
+      Body: 'new file content'
+    }).promise();
+
+    const buckets = '';
+    const collection = {
+      duplicateHandling: 'version',
+      files: [
+        { regex: '.' }
+      ]
+    };
+    const provider = {
+      host: sourceBucketName
+    };
+    const forceDownload = null;
+
+    const granuleIngester = new S3Granule(
+      buckets,
+      collection,
+      provider,
+      fileStagingDir,
+      forceDownload
+    );
+
+    const granule = {
+      files: [
+        {
+          path: sourcePath,
+          name: fileName
+        }
+      ]
+    };
+
+    let getBucketVersioningReponse;
+
+    // Verify that bucket versioning is not yet enabled
+    getBucketVersioningReponse = await s3().getBucketVersioning({
+      Bucket: destinationBucketName
+    }).promise();
+    t.not(getBucketVersioningReponse.Status, 'Enabled');
+
+    // Call granuleIngester.ingest(granule, bucket) and ingest the file that's already in S3
+    await granuleIngester.ingest(granule, destinationBucketName);
+
+    // Verify that the file has been changed in S3
+    await s3().getObject({
+      Bucket: destinationBucketName,
+      Key: destinationKey
+    }).promise();
+
+    // Verify that bucket versioning is now enabled
+    getBucketVersioningReponse = await s3().getBucketVersioning({
+      Bucket: destinationBucketName
+    }).promise();
+
+    t.is(getBucketVersioningReponse.Status, 'Enabled');
+  }
+  finally {
+    await Promise.all([
+      recursivelyDeleteS3Bucket(sourceBucketName),
+      recursivelyDeleteS3Bucket(destinationBucketName)
+    ]);
+  }
 });

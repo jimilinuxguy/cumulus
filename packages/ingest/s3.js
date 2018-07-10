@@ -1,9 +1,7 @@
 'use strict';
 
 const aws = require('@cumulus/common/aws');
-const fs = require('fs');
 const log = require('@cumulus/common/log');
-const os = require('os');
 const path = require('path');
 
 module.exports.s3Mixin = (superclass) => class extends superclass {

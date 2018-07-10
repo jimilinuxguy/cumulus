@@ -281,7 +281,14 @@ exports.deleteS3Files = (s3Objs) => {
 * @returns {Promise} - the promised result of `S3.deleteBucket`
 **/
 exports.recursivelyDeleteS3Bucket = async (bucket) => {
+  await exports.s3().putBucketVersioning({
+    Bucket: bucket,
+    VersioningConfiguration: { Status: 'Suspended' }
+  }).promise();
+
+  // TODO Update this to handle large numbers of objects
   const response = await exports.s3().listObjects({ Bucket: bucket }).promise();
+
   const s3Objects = response.Contents.map((o) => ({
     Bucket: bucket,
     Key: o.Key
