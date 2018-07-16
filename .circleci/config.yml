@@ -2,23 +2,30 @@ version: 2
 
 jobs:
   build:
-    docker:
-      - image: cumuluss/circleci:node-8.11
-      - name: localstack
-        image: localstack/localstack:0.8.7
-        environment:
-          ENV_INTERNAL_TEST_RUN: true
-          DEBUG: 1
-          SERVICES: 'kinesis,lambda,s3,sns,sqs,dynamodb,dynamodbstreams'
-      - name: elastichost
-        image: elasticsearch:5.6
-        environment:
-          # limit memory usage to 750mb
-          ES_JAVA_OPTS: "-Xms750m -Xmx750m"
+    machine:
+      image: circleci/classic:latest
+
+    # docker:
+    #   - image: cumuluss/circleci:node-8.11
+    #   - name: localstack
+    #     image: localstack/localstack:0.8.7
+    #     environment:
+    #       ENV_INTERNAL_TEST_RUN: true
+    #       DEBUG: 1
+    #       SERVICES: 'kinesis,lambda,s3,sns,sqs,dynamodb,dynamodbstreams'
+    #   - name: elastichost
+    #     image: elasticsearch:5.6
+    #     environment:
+    #       # limit memory usage to 750mb
+    #       ES_JAVA_OPTS: "-Xms750m -Xmx750m"
 
     working_directory: ~/project
     steps:
       - checkout
+
+      - run:
+          name: start docker services
+          command: docker-compose run -d local
 
       - restore_cache:
           keys:
@@ -100,15 +107,15 @@ jobs:
       - run:
           name: Running All Tests except API
           environment:
-            LOCALSTACK_HOST: localstack
-            LOCAL_ES_HOST: elastichost
+            LOCALSTACK_HOST: localhost
+            # LOCAL_ES_HOST: elastichost
           command: ./node_modules/.bin/nyc ./node_modules/.bin/lerna run test --concurrency 2 --ignore @cumulus/api
 
       - run:
           name: Running API endpoint Tests
           environment:
-            LOCALSTACK_HOST: localstack
-            LOCAL_ES_HOST: elastichost
+            LOCALSTACK_HOST: localhost
+            # LOCAL_ES_HOST: elastichost
           command: |
             cd packages/api
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/endpoints/*.js
@@ -117,8 +124,8 @@ jobs:
       - run:
           name: Running API ES Tests
           environment:
-            LOCALSTACK_HOST: localstack
-            LOCAL_ES_HOST: elastichost
+            LOCALSTACK_HOST: localhost
+            # LOCAL_ES_HOST: elastichost
           command: |
             cd packages/api
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/es/*.js
@@ -127,8 +134,8 @@ jobs:
       - run:
           name: Running API migration Tests
           environment:
-            LOCALSTACK_HOST: localstack
-            LOCAL_ES_HOST: elastichost
+            LOCALSTACK_HOST: localhost
+            # LOCAL_ES_HOST: elastichost
           command: |
             cd packages/api
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/migrations/*.js
@@ -137,8 +144,8 @@ jobs:
       - run:
           name: Running API Lambda Tests
           environment:
-            LOCALSTACK_HOST: localstack
-            LOCAL_ES_HOST: elastichost
+            LOCALSTACK_HOST: localhost
+            # LOCAL_ES_HOST: elastichost
           command: |
             cd packages/api
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/lambdas/*.js
@@ -147,8 +154,8 @@ jobs:
       - run:
           name: Running API cli Tests
           environment:
-            LOCALSTACK_HOST: localstack
-            LOCAL_ES_HOST: elastichost
+            LOCALSTACK_HOST: localhost
+            # LOCAL_ES_HOST: elastichost
           command: |
             cd packages/api
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/cli/*.js
@@ -157,8 +164,8 @@ jobs:
       - run:
           name: Running API models Tests
           environment:
-            LOCALSTACK_HOST: localstack
-            LOCAL_ES_HOST: elastichost
+            LOCALSTACK_HOST: localhost
+            # LOCAL_ES_HOST: elastichost
           command: |
             cd packages/api
 
@@ -168,7 +175,7 @@ jobs:
       - run:
           name: Running End to End Tests
           environment:
-            LOCALSTACK_HOST: localstack
+            LOCALSTACK_HOST: localhost
           command: yarn e2e
 
       - run:
