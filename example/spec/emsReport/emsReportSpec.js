@@ -47,6 +47,7 @@ describe('The EMS report', () => {
     beforeAll(async () => {
       const lambda = new Lambda();
       const response = await lambda.invoke({ FunctionName: emsReportLambda }).promise();
+      console.log('lambdaOutput: ', response.Payload);
       lambdaOutput = JSON.parse(response.Payload);
     });
 
@@ -68,4 +69,3 @@ describe('The EMS report', () => {
     });
   });
 });
-
