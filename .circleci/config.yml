@@ -125,7 +125,7 @@ jobs:
             LOCALSTACK_HOST: localstack
           command: yarn e2e
 
-  api_endpoints_tests:
+  api_tests:
     <<: *localstack
     steps:
       - checkout
