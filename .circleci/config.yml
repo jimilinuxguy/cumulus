@@ -1,6 +1,11 @@
 
 references:
-  defaults: &defaults
+  simple: &simple
+    docker:
+      - image: cumuluss/circleci:node-8.11
+    working_directory: ~/project
+
+  localstack: &localstack
     docker:
       - image: cumuluss/circleci:node-8.11
       - name: localstack
@@ -51,9 +56,7 @@ references:
 version: 2
 jobs:
   install:
-    docker:
-      - image: cumuluss/circleci:node-8.11
-    working_directory: ~/project
+    <<: *simple
     steps:
       - checkout
       - restore_cache:
@@ -98,7 +101,7 @@ jobs:
             - node_modules
 
   non_api_tests:
-    <<: *defaults
+    <<: *localstack
     steps:
       - checkout
       - *attach_workspace
@@ -115,9 +118,15 @@ jobs:
             LOCALSTACK_HOST: localstack
             LOCAL_ES_HOST: elastichost
           command: ./node_modules/.bin/nyc ./node_modules/.bin/lerna run test --concurrency 2 --ignore @cumulus/api
+      
+      - run:
+          name: Running End to End Tests
+          environment:
+            LOCALSTACK_HOST: localstack
+          command: yarn e2e
 
   api_endpoints_tests:
-    <<: *defaults
+    <<: *localstack
     steps:
       - checkout
       - *attach_workspace
@@ -134,7 +143,7 @@ jobs:
             cp .nyc_output/* ../../.final_nyc_output
 
   api_es_tests:
-    <<: *defaults
+    <<: *localstack
     steps:
       - checkout
       - *attach_workspace
@@ -168,7 +177,7 @@ jobs:
             cp .nyc_output/* ../../.final_nyc_output
 
   api_lambda_tests:
-    <<: *defaults
+    <<: *localstack
     steps:
       - checkout
       - *attach_workspace
@@ -185,7 +194,7 @@ jobs:
             cp .nyc_output/* ../../.final_nyc_output
 
   api_cli_tests:
-    <<: *defaults
+    <<: *localstack
     steps:
       - checkout
       - *attach_workspace
@@ -200,6 +209,93 @@ jobs:
             cd packages/api
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/cli/*.js
             cp .nyc_output/* ../../.final_nyc_output
+
+  build_from_source:
+    <<: *simple
+    steps:
+      - checkout
+      - *restore_package_cache
+      - *attach_workspace
+    
+      - run:
+          name: Prepare for Integration Tests
+          environment:
+            PRODUCTION: true # this will ensure that the integration from source uses the same packaging as the integration from npm packages
+          command: |
+            source ./example/spec/select
+
+            if [[ ! -z "$RUN_INTEGRATION" ]]; then
+              sudo chown -R circleci:circleci /usr/local/bin
+
+              # install cumulus-integration
+              ./bin/prepare
+            fi
+
+      - run:
+          name: Deploy cumulus source code to aws
+          command: |
+            source ./example/spec/select
+            if [[ ! -z "$RUN_INTEGRATION" ]]; then
+              cd example
+
+              # deploy latest iam roles to aws
+              ./node_modules/.bin/kes cf deploy --kes-folder iam --region us-east-1 --deployment $DEPLOYMENT --template node_modules/@cumulus/deployment/iam
+
+              # deploy latest version of the packages to the aws
+              ./node_modules/.bin/kes cf deploy --kes-folder app --region us-east-1 --deployment $DEPLOYMENT --template node_modules/@cumulus/deployment/app && ./node_modules/.bin/kes lambda S3AccessTest deploy --kes-folder app --region us-west-1 --deployment $DEPLOYMENT --template node_modules/@cumulus/deployment/app
+            fi
+
+  integration_from_source:
+    <<: *simple
+    steps:
+      - checkout
+      - *restore_package_cache
+      - *attach_workspace
+      - run:
+          name: Run AWS Integration tests 
+          command: |
+            source ./example/spec/select
+            if [[ ! -z "$RUN_INTEGRATION" ]]; then
+              cd example
+
+              # run the tests
+              echo $DEPLOYMENT
+              yarn test
+            fi
+
+    
+  generate_docs:
+    <<: *simple
+    steps:
+      - checkout
+      - *restore_package_cache
+
+      - run:
+          name: Prepare Unreleased Docs
+          command: |
+            if [[  "$CIRCLE_BRANCH" == 'master' ]]; then
+              yarn docs-build
+              # mv _book unreleased
+            fi
+      
+            - add_ssh_keys:
+          fingerprints:
+            - "ac:b8:9d:87:6b:65:ff:6f:a1:7c:42:c5:3c:2f:39:93"
+      
+      - run:
+          name: Publish Documentation
+          command: |
+            if [[  "$CIRCLE_BRANCH" == 'master' ]]; then
+              cd _book
+              git init
+              git config user.name "Devseed"
+              git config user.email "info@developmentseed.org"
+              git add -A
+              git commit -m "Automated build in circleci"
+              git push --force --quiet git@github.com:nasa/cumulus master:gh-pages
+              rm -rf .git
+            fi
+
 
 workflows:
   version: 2
@@ -224,3 +320,13 @@ workflows:
       - api_cli_tests:
           requires:
             - install
+      - build_from_source:
+          requires:
+            - install
+      - integration_from_source:
+          requires:
+            - build_from_source
+      - generate_docs:
+          requires:
+            - install
+      - 
