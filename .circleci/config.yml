@@ -1,19 +1,52 @@
 
-defaults: &defaults
-  docker:
-    - image: cumuluss/circleci:node-8.11
-    - name: localstack
-      image: localstack/localstack:0.8.7
-      environment:
-        ENV_INTERNAL_TEST_RUN: true
-        DEBUG: 1
-        SERVICES: 'kinesis,lambda,s3,sns,sqs,dynamodb,dynamodbstreams'
-    - name: elastichost
-      image: elasticsearch:5.6
-      environment:
-        # limit memory usage to 750mb
-        ES_JAVA_OPTS: "-Xms750m -Xmx750m"
-  working_directory: ~/project
+references:
+  defaults: &defaults
+    docker:
+      - image: cumuluss/circleci:node-8.11
+      - name: localstack
+        image: localstack/localstack:0.8.7
+        environment:
+          ENV_INTERNAL_TEST_RUN: true
+          DEBUG: 1
+          SERVICES: 'kinesis,lambda,s3,sns,sqs,dynamodb,dynamodbstreams'
+      - name: elastichost
+        image: elasticsearch:5.6
+        environment:
+          # limit memory usage to 750mb
+          ES_JAVA_OPTS: "-Xms750m -Xmx750m"
+    working_directory: ~/project
+  
+  restore_package_cache: &restore_package_cache
+    restore_cache:
+      keys:
+        - cumulus-packages-{{ checksum "global-hash" }}
+
+  attach_workspace: &attach_workspace
+    attach_workspace:
+      # Must be absolute path or relative path from working_directory
+      at: /home/circleci/project
+
+  server: &server
+    run:
+      name: Restore workspace data
+      command: |
+        ./bin/restore_cache
+        # start ftp
+        sudo rm -rf /home/vsftpd
+        sudo ln -s /home/circleci/project/packages/test-data /home/vsftpd
+        sudo service vsftpd start || true
+
+        # start http service
+        sudo rm -rf /var/www/html
+        sudo ln -s /home/circleci/project/packages/test-data /var/www/html
+        sudo service apache2 start
+
+        # start sftp service
+        sudo bash /usr/sbin/sftp.sh user:password
+        sudo cp -r /home/circleci/project/packages/test-data/* /home/user/
+        sudo cp -r /home/circleci/project/packages/test-data/keys /home/user/.ssh
+
+        mkdir .final_nyc_output
 
 version: 2
 jobs:
@@ -41,35 +74,14 @@ jobs:
             - ./node_modules
           key: core-{{ checksum "lerna.json" }}-{{ checksum "package.json" }}
 
-      - restore_cache:
-          keys:
-            - cumulus-packages-{{ checksum "global-hash" }}
+      - &restore_package_cache 
 
       - run:
           name: Installing Dependencies
           command: |
             # restore cache
             ./bin/restore_cache
-
-            # start ftp
-            sudo rm -rf /home/vsftpd
-            sudo ln -s /home/circleci/project/packages/test-data /home/vsftpd
-            sudo service vsftpd start || true
-
-            # start http service
-            sudo rm -rf /var/www/html
-            sudo ln -s /home/circleci/project/packages/test-data /var/www/html
-            sudo service apache2 start
-
-            # start sftp service
-            sudo bash /usr/sbin/sftp.sh user:password
-            sudo cp -r /home/circleci/project/packages/test-data/* /home/user/
-            sudo cp -r /home/circleci/project/packages/test-data/keys /home/user/.ssh
-
             yarn bootstrap-no-build
-            mkdir .final_nyc_output
-            mkdir cirleci_cache
-
             # save_cache
             ./bin/save_cache
 
@@ -89,17 +101,9 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: /home/circleci/project
-
-      - restore_cache:
-          keys:
-            - cumulus-packages-{{ checksum "global-hash" }}
-
-      - run:
-          name: Restore workspace data
-          command: ./bin/restore_cache
+      - &attach_workspace
+      - &restore_package_cache
+      - &server 
       
       - run:
           name: Running eslint
@@ -112,6 +116,25 @@ jobs:
             LOCAL_ES_HOST: elastichost
           command: ./node_modules/.bin/nyc ./node_modules/.bin/lerna run test --concurrency 2 --ignore @cumulus/api
 
+  api_endpoints_tests:
+    <<: *defaults
+    steps:
+      - checkout
+      - &attach_workspace
+      - &restore_package_cache
+      - &server 
+      
+      - run:
+          name: Running API endpoint Tests
+          environment:
+            LOCALSTACK_HOST: localstack
+            LOCAL_ES_HOST: elastichost
+          command: |
+            cd packages/api
+            ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/endpoints/*.js
+            cp .nyc_output/* ../../.final_nyc_output
+
+
 
 
 workflows:
@@ -122,9 +145,9 @@ workflows:
       - non_api_tests:
           requires:
             - install
-      # - api_endpoints_tests:
-      #     requires:
-      #       - build
+      - api_endpoints_tests:
+          requires:
+            - build
       # - api_es_tests:
       #     requires:
       #       - build
