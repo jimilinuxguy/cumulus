@@ -142,13 +142,6 @@ jobs:
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/endpoints/*.js
             cp .nyc_output/* ../../.final_nyc_output
 
-  api_es_tests:
-    <<: *localstack
-    steps:
-      - checkout
-      - *attach_workspace
-      - *restore_package_cache
-      - *server
       - run:
           name: Running API ES Tests
           environment:
@@ -159,13 +152,6 @@ jobs:
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/es/*.js
             cp .nyc_output/* ../../.final_nyc_output
 
-  api_migration_tests:
-    <<: *localstack
-    steps:
-      - checkout
-      - *attach_workspace
-      - *restore_package_cache
-      - *server
       - run:
           name: Running API migration Tests
           environment:
@@ -176,13 +162,6 @@ jobs:
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/migrations/*.js
             cp .nyc_output/* ../../.final_nyc_output
 
-  api_lambda_tests:
-    <<: *localstack
-    steps:
-      - checkout
-      - *attach_workspace
-      - *restore_package_cache
-      - *server
       - run:
           name: Running API Lambda Tests
           environment:
@@ -193,13 +172,6 @@ jobs:
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/lambdas/*.js
             cp .nyc_output/* ../../.final_nyc_output
 
-  api_cli_tests:
-    <<: *localstack
-    steps:
-      - checkout
-      - *attach_workspace
-      - *restore_package_cache
-      - *server
       - run:
           name: Running API cli Tests
           environment:
@@ -305,21 +277,21 @@ workflows:
       - non_api_tests:
           requires:
             - install
-      - api_endpoints_tests:
+      - api_tests:
           requires:
             - install
-      - api_es_tests:
-          requires:
-            - install 
-      - api_migration_tests:
-          requires:
-            - install
-      - api_lambda_tests:
-          requires:
-            - install
-      - api_cli_tests:
-          requires:
-            - install
+      # - api_es_tests:
+      #     requires:
+      #       - install 
+      # - api_migration_tests:
+      #     requires:
+      #       - install
+      # - api_lambda_tests:
+      #     requires:
+      #       - install
+      # - api_cli_tests:
+      #     requires:
+      #       - install
       - build_from_source:
           requires:
             - install
