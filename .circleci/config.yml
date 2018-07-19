@@ -160,7 +160,7 @@ jobs:
             cp .nyc_output/* ../../.final_nyc_output
 
   api_migration_tests:
-    <<: *defaults
+    <<: *localstack
     steps:
       - checkout
       - *attach_workspace
