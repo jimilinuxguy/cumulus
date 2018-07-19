@@ -82,14 +82,20 @@ jobs:
           root: /home/circleci/project 
           # Must be relative path from root
           paths:
-            - circleci_cache
+            - global-hash
+            - node_modules
 
   non_api_tests:
     <<: *defaults
     steps:
+      - checkout
       - attach_workspace:
           # Must be absolute path or relative path from working_directory
           at: /home/circleci/project
+
+      - restore_cache:
+          keys:
+            - cumulus-packages-{{ checksum "global-hash" }}
 
       - run:
           name: Restore workspace data
@@ -98,6 +104,7 @@ jobs:
       - run:
           name: Running eslint
           command: ./node_modules/.bin/eslint packages/api --ext .js
+
       - run:
           name: Running All Tests except API
           environment:
