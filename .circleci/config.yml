@@ -74,7 +74,7 @@ jobs:
             - ./node_modules
           key: core-{{ checksum "lerna.json" }}-{{ checksum "package.json" }}
 
-      - &restore_package_cache 
+      - *restore_package_cache 
 
       - run:
           name: Installing Dependencies
@@ -101,9 +101,9 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - &attach_workspace
-      - &restore_package_cache
-      - &server 
+      - *attach_workspace
+      - *restore_package_cache
+      - *server 
       
       - run:
           name: Running eslint
@@ -120,9 +120,9 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - &attach_workspace
-      - &restore_package_cache
-      - &server 
+      - *attach_workspace
+      - *restore_package_cache
+      - *server 
       
       - run:
           name: Running API endpoint Tests
@@ -133,8 +133,6 @@ jobs:
             cd packages/api
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/endpoints/*.js
             cp .nyc_output/* ../../.final_nyc_output
-
-
 
 
 workflows:
