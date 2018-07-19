@@ -123,7 +123,6 @@ jobs:
       - *attach_workspace
       - *restore_package_cache
       - *server 
-      
       - run:
           name: Running API endpoint Tests
           environment:
@@ -134,6 +133,73 @@ jobs:
             ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/endpoints/*.js
             cp .nyc_output/* ../../.final_nyc_output
 
+  api_es_tests:
+    <<: *defaults
+    steps:
+      - checkout
+      - *attach_workspace
+      - *restore_package_cache
+      - *server
+      - run:
+          name: Running API ES Tests
+          environment:
+            LOCALSTACK_HOST: localstack
+            LOCAL_ES_HOST: elastichost
+          command: |
+            cd packages/api
+            ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/es/*.js
+            cp .nyc_output/* ../../.final_nyc_output
+
+  api_migration_tests:
+    <<: *defaults
+    steps:
+      - checkout
+      - *attach_workspace
+      - *restore_package_cache
+      - *server
+      - run:
+          name: Running API migration Tests
+          environment:
+            LOCALSTACK_HOST: localstack
+            LOCAL_ES_HOST: elastichost
+          command: |
+            cd packages/api
+            ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/migrations/*.js
+            cp .nyc_output/* ../../.final_nyc_output
+
+  api_lambda_tests:
+    <<: *defaults
+    steps:
+      - checkout
+      - *attach_workspace
+      - *restore_package_cache
+      - *server
+      - run:
+          name: Running API Lambda Tests
+          environment:
+            LOCALSTACK_HOST: localstack
+            LOCAL_ES_HOST: elastichost
+          command: |
+            cd packages/api
+            ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/lambdas/*.js
+            cp .nyc_output/* ../../.final_nyc_output
+
+  api_cli_tests:
+    <<: *defaults
+    steps:
+      - checkout
+      - *attach_workspace
+      - *restore_package_cache
+      - *server
+      - run:
+          name: Running API cli Tests
+          environment:
+            LOCALSTACK_HOST: localstack
+            LOCAL_ES_HOST: elastichost
+          command: |
+            cd packages/api
+            ./node_modules/.bin/nyc ./node_modules/.bin/ava tests/cli/*.js
+            cp .nyc_output/* ../../.final_nyc_output
 
 workflows:
   version: 2
@@ -146,15 +212,15 @@ workflows:
       - api_endpoints_tests:
           requires:
             - install
-      # - api_es_tests:
-      #     requires:
-      #       - build
-      # - api_migration_tests:
-      #     requires:
-      #       - build
-      # - api_lambda_tests:
-      #     requires:
-      #       - build
-      # - api_cli_tests:
-      #     requires:
-      #       - build
+      - api_es_tests:
+          requires:
+            - install 
+      - api_migration_tests:
+          requires:
+            - install
+      - api_lambda_tests:
+          requires:
+            - install
+      - api_cli_tests:
+          requires:
+            - install
