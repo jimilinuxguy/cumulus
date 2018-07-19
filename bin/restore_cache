@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# make sure no node_modules folder exists
+./node_modules/.bin/lerna exec -- rm -rf node_modules
+echo "node_modules folders cleared"
+
+# move node_modules files
+./node_modules/.bin/lerna exec -- mv ../../circleci_cache/\$LERNA_PACKAGE_NAME/node_modules .
+echo "node_modules folders moved to cache folder"
+
+# remove the cache folder
+rm -rf circleci_cache
+echo "Circleci cache folder deleted"

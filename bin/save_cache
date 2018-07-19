@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# create the cache folder
+mkdir -p circleci_cache
+echo "Circleci cache folder created"
+
+# create package folders
+./node_modules/.bin/lerna exec -- mkdir -p ../../circleci_cache/\$LERNA_PACKAGE_NAME
+echo "Package folders created"
+
+# make sure all packages have node_moduels
+./node_modules/.bin/lerna exec -- mkdir -p node_modules
+echo "All packages have node_modules folder"
+
+# move node_modules files
+./node_modules/.bin/lerna exec -- mv node_modules ../../circleci_cache/\$LERNA_PACKAGE_NAME/
+echo "node_module folders moved to cache folder"
