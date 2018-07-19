@@ -145,7 +145,7 @@ workflows:
             - install
       - api_endpoints_tests:
           requires:
-            - build
+            - install
       # - api_es_tests:
       #     requires:
       #       - build
