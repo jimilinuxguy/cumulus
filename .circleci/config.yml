@@ -78,15 +78,43 @@ jobs:
           paths:
             - ./circleci_cache
 
+      - persist_to_workspace:
+          root: /home/circleci/project 
+          # Must be relative path from root
+          paths:
+            - circleci_cache
+
+  non_api_tests:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: /home/circleci/project
+
+      - run:
+          name: Restore workspace data
+          command: ./bin/restore_cache
+      
+      - run:
+          name: Running eslint
+          command: ./node_modules/.bin/eslint packages/api --ext .js
+      - run:
+          name: Running All Tests except API
+          environment:
+            LOCALSTACK_HOST: localstack
+            LOCAL_ES_HOST: elastichost
+          command: ./node_modules/.bin/nyc ./node_modules/.bin/lerna run test --concurrency 2 --ignore @cumulus/api
+
+
 
 workflows:
   version: 2
   cumulus:
     jobs:
       - install
-      # - non_api_tests:
-      #     requires:
-      #       - build
+      - non_api_tests:
+          requires:
+            - install
       # - api_endpoints_tests:
       #     requires:
       #       - build
