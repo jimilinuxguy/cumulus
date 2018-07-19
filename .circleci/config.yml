@@ -43,7 +43,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - packages-{{ checksum "global-hash" }}
+            - cumulus-packages-{{ checksum "global-hash" }}
 
       - run:
           name: Installing Dependencies
@@ -74,7 +74,7 @@ jobs:
             ./bin/save_cache
 
       - save_cache:
-          key: packages-{{ checksum "global-hash" }}
+          key: cumulus-packages-{{ checksum "global-hash" }}
           paths:
             - ./circleci_cache
 
