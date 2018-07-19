@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# if no cache folder exists, skip
+if [ ! -d "circleci_cache" ]; then
+    echo "there is not cache to restore"
+    exit 0;
+fi
+
 # make sure no node_modules folder exists
 ./node_modules/.bin/lerna exec -- rm -rf node_modules
 echo "node_modules folders cleared"
