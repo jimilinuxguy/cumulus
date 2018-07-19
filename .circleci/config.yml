@@ -268,7 +268,7 @@ jobs:
     <<: *simple
     steps:
       - checkout
-      - *restore_package_cache
+      - *attach_workspace
 
       - run:
           name: Prepare Unreleased Docs
