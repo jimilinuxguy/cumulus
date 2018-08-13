@@ -9,8 +9,7 @@ const {
 } = require('@cumulus/common');
 const Rule = require('../models/rules');
 const messageSchema = require('./kinesis-consumer-event-schema.json');
-const sfSchedule = require('./sf-scheduler');
-
+const { queueMessageForRule } = require('../lib/rulesHelpers');
 
 /**
  * `getKinesisRules` scans and returns DynamoDB rules table for enabled,
@@ -39,30 +38,6 @@ async function getKinesisRules(event) {
   });
 
   return kinesisRules.Items;
-}
-
-/**
- * Queue a workflow message for the kinesis rule with the message passed
- * to kinesis as the payload
- *
- * @param {Object} kinesisRule - kinesis rule to queue the message for
- * @param {Object} eventObject - message passed to kinesis
- * @returns {Promise} promise resolved when the message is queued
- */
-async function queueMessageForRule(kinesisRule, eventObject) {
-  const item = {
-    workflow: kinesisRule.workflow,
-    provider: kinesisRule.provider,
-    collection: kinesisRule.collection,
-    payload: eventObject
-  };
-
-  const payload = await Rule.buildPayload(item);
-
-  return new Promise((resolve, reject) => sfSchedule(payload, {}, (err, result) => {
-    if (err) reject(err);
-    resolve(result);
-  }));
 }
 
 /**

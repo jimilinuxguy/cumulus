@@ -139,6 +139,9 @@ class Rule extends Manager {
     case 'kinesis':
       await this.addKinesisEventSource(item);
       break;
+    case 'sns':
+      // TODO - add event source mapping
+      break;
     default:
       throw new Error('Type not supported');
     }
