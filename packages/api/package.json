@@ -17,7 +17,7 @@
     "prepublishOnly": "PRODUCTION=true npm run build"
   },
   "ava": {
-    "files": "tests/**/*.js",
+    "files": "tests/lambdas/test-kinesis-consumer.js",
     "serial": true
   },
   "nyc": {
