@@ -164,12 +164,11 @@ function getEmsFieldFromGranField(granule, emsField, granField) {
  * @returns {Array<string>} EMS records
  */
 function buildEMSRecords(mapping, granules) {
-  const records = granules.map((granule) => {
-    const record = Object.keys(mapping)
-      .map((emsField) => getEmsFieldFromGranField(granule, emsField, mapping[emsField]));
-    return record.join('|&|');
-  });
-  return records;
+  return granules
+    .map((granule) =>
+      Object.keys(mapping)
+        .map((emsField) => getEmsFieldFromGranField(granule, emsField, mapping[emsField]))
+        .join('|&|'));
 }
 
 /**

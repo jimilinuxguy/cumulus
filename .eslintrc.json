@@ -1,7 +1,13 @@
 {
   "root": true,
-  "extends": "airbnb",
-  "plugins": ["eslint-plugin-jsdoc"],
+  "plugins": [
+    "jsdoc",
+    "sonarjs"
+  ],
+  "extends": [
+    "airbnb",
+    "plugin:sonarjs/recommended"
+  ],
   "parser": "babel-eslint",
   "env": {
     "node": true,
@@ -84,6 +90,10 @@
     ],
     "arrow-parens": ["error", "always"],
     "prefer-destructuring": "off",
-    "function-paren-newline": ["error", "consistent"]
+    "function-paren-newline": ["error", "consistent"],
+
+
+    "sonarjs/cognitive-complexity": "warn",
+    "sonarjs/no-identical-functions": "warn"
   }
 }

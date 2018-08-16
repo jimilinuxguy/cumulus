@@ -8,12 +8,7 @@ function checkRegex(regex, sampleFileName) {
   const validation = new RegExp(regex);
   const match = validation.test(sampleFileName);
 
-  if (!match) {
-    const err = {
-      message: `regex cannot validate ${sampleFileName}`
-    };
-    throw err;
-  }
+  if (!match) throw new Error(`regex cannot validate ${sampleFileName}`);
 }
 
 class Collection extends Manager {
@@ -27,10 +22,7 @@ class Collection extends Manager {
     const match = item.sampleFileName.match(extraction);
 
     if (!match) {
-      const err = {
-        message: 'granuleIdExtraction regex returns null when applied to sampleFileName'
-      };
-      throw err;
+      throw new Error('granuleIdExtraction regex returns null when applied to sampleFileName');
     }
 
     checkRegex(item.granuleId, match[1]);

@@ -118,7 +118,7 @@ const build = {
   },
 
   not: (queries, params, regex) => {
-    const results = params.map((i) => {
+    const results = params.map((i) => { // eslint-disable-line sonarjs/no-identical-functions
       const field = i.name.match(regex)[1];
       return {
         terms: {

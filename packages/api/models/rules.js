@@ -98,10 +98,7 @@ class Rule extends Manager {
     const exists = await aws.fileExists(bucket, key);
 
     if (!exists) {
-      const err = {
-        message: `Workflow doesn\'t exist: s3://${bucket}/${key} for ${item.name}`
-      };
-      throw err;
+      throw new Error(`Workflow doesn\'t exist: s3://${bucket}/${key} for ${item.name}`);
     }
 
     const template = `s3://${bucket}/${key}`;

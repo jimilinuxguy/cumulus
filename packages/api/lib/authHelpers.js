@@ -31,7 +31,7 @@ function googleOAuthLoginUrl(state) {
     'https://www.googleapis.com/auth/userinfo.email'
   ];
 
-  const url = oauth2Client.generateAuthUrl({
+  return oauth2Client.generateAuthUrl({
     // 'online' (default) or 'offline' (gets refresh_token)
     access_type: 'offline',
 
@@ -39,8 +39,6 @@ function googleOAuthLoginUrl(state) {
     scope: scopes,
     state: state
   });
-
-  return url;
 }
 
 /**
@@ -101,10 +99,13 @@ async function fetchGoogleToken(code) {
   // returned as a list. If users have multiple emails we will have to
   // scan the users table to see if any match.
   const userName = userData.emails[0].value;
-  const responseObject = {
-    userName, accessToken, refresh, expires
+
+  return {
+    accessToken,
+    expires,
+    refresh,
+    userName
   };
-  return responseObject;
 }
 
 /**

@@ -158,14 +158,12 @@ async function reindex(
   }
 
   // reindex
-  const reindexResponse = await esClient.reindex({
+  return esClient.reindex({
     body: {
       source: { index: sourceIndex },
       dest: { index: destIndex }
     }
   });
-
-  return reindexResponse;
 }
 
 module.exports = {

@@ -69,10 +69,8 @@ class Manager {
       const validate = ajv.compile(schema);
       const valid = validate(item);
       if (!valid) {
-        const err = {
-          message: 'The record has validation errors',
-          detail: validate.errors
-        };
+        const err = new Error('The record has validation errors');
+        err.detail = validate.errors;
         throw err;
       }
     }
