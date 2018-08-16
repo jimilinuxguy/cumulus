@@ -62,28 +62,27 @@ test.after.always(async () => {
   await aws.recursivelyDeleteS3Bucket(process.env.bucket);
 });
 
-test.serial('create and delete a onetime rule', async (t) => {
+test.serial('create and delete a onetime rule', (t) => {
   // create rule
   const rules = new models.Rule();
-  return rules.create(onetimeRule)
-    .then(async (rule) => {
-      t.is(rule.name, onetimeRule.name);
-      // delete rule
-      await rules.delete(rule);
-    });
+  const rule = rules.create(onetimeRule);
+  t.is(rule.name, onetimeRule.name);
+
+  // delete rule
+  return rules.delete(rule);
 });
 
 test.serial('create and delete a kinesis type rule', async (t) => {
   // create rule
   const rules = new models.Rule();
-  return rules.create(kinesisRule)
-    .then(async (rule) => {
-      t.is(rule.name, kinesisRule.name);
-      t.is(rule.rule.value, kinesisRule.rule.value);
-      t.false(rule.rule.arn === undefined);
-      // delete rule
-      await rules.delete(rule);
-    });
+  const rule = await rules.create(kinesisRule);
+
+  t.is(rule.name, kinesisRule.name);
+  t.is(rule.rule.value, kinesisRule.rule.value);
+  t.false(rule.rule.arn === undefined);
+
+  // delete rule
+  return rules.delete(rule);
 });
 
 test.serial('update a kinesis type rule state, arn does not change', async (t) => {

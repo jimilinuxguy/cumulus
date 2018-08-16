@@ -208,7 +208,7 @@ test.serial('Complete index - source index does not exist', async (t) => {
   }
 });
 
-test.serial('Complete index - no destination', async (t) => {
+test.serial('Complete index - destination does not exist', async (t) => {
   try {
     await es.completeReindex('fakehost', 'cumulus-1', 'dest-index', esIndex);
   }

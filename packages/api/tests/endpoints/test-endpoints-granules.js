@@ -10,6 +10,7 @@ const { DefaultProvider } = require('@cumulus/ingest/crypto');
 const { randomString } = require('@cumulus/common/test-utils');
 const xml2js = require('xml2js');
 const { xmlParseOptions } = require('@cumulus/cmrjs/utils');
+const { promisify } = require('util');
 
 const models = require('../../models');
 const bootstrap = require('../../lambdas/bootstrap');
@@ -579,14 +580,9 @@ test.serial('move a file and update metadata', async (t) => {
 
   const file = await aws.s3().getObject({ Bucket: buckets.public.name, Key: newGranule.files[1].filepath }).promise();
   await aws.recursivelyDeleteS3Bucket(buckets.public.name);
-  return new Promise((resolve, reject) => {
-    xml2js.parseString(file.Body, xmlParseOptions, (err, data) => {
-      if (err) return reject(err);
-      return resolve(data);
-    });
-  }).then((xml) => {
-    const newUrl = xml.Granule.OnlineAccessURLs.OnlineAccessURL[0].URL;
-    const newDestination = `${process.env.DISTRIBUTION_ENDPOINT}${destinations[0].bucket}/${destinations[0].filepath}/${newGranule.files[0].name}`;
-    t.is(newUrl, newDestination);
-  });
+
+  const xml = await promisify(xml2js.parseString)(file.Body, xmlParseOptions);
+  const newUrl = xml.Granule.OnlineAccessURLs.OnlineAccessURL[0].URL;
+  const newDestination = `${process.env.DISTRIBUTION_ENDPOINT}${destinations[0].bucket}/${destinations[0].filepath}/${newGranule.files[0].name}`;
+  t.is(newUrl, newDestination);
 });

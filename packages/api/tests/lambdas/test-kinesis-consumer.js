@@ -273,20 +273,20 @@ test.serial('An SNS Fallback retry, should throw an error if message is invalid 
   }
 });
 
-test.serial('A kinesis message should not publish record to fallbackSNS if it processes.', (t) => {
+test.serial('A kinesis message should not publish record to fallbackSNS if it processes.', async (t) => {
   const validMessage = JSON.stringify({ collection: 'confection-collection' });
   const kinesisEvent = {
     Records: [{ kinesis: { data: Buffer.from(validMessage).toString('base64') } }]
   };
   t.true(publishStub.notCalled);
-  return handler(kinesisEvent, {}, testCallback).then((r) => t.deepEqual(r, [[]]));
+  await handler(kinesisEvent, {}, testCallback).then((r) => t.deepEqual(r, [[]]));
 });
 
-test.serial('An SNS Fallback message should not throw if message is valid.', (t) => {
+test.serial('An SNS Fallback message should not throw if message is valid.', async (t) => {
   const validMessage = JSON.stringify({ collection: 'confection-collection' });
   const kinesisEvent = {
     Records: [{ kinesis: { data: Buffer.from(validMessage).toString('base64') } }]
   };
   const snsEvent = wrapKinesisRecord(kinesisEvent.Records[0]);
-  return handler(snsEvent, {}, testCallback).then((r) => t.deepEqual(r, [[]]));
+  await handler(snsEvent, {}, testCallback).then((r) => t.deepEqual(r, [[]]));
 });

@@ -34,9 +34,7 @@ test.afterEach(async (t) => {
   );
 });
 
-test.after.always(async (_t) => {
-  await userModel.deleteTable();
-});
+test.after.always(() => userModel.deleteTable());
 
 test('buildLambdaProxyResponse sets a default status code of 200', (t) => {
   const response = buildLambdaProxyResponse();
