@@ -12,10 +12,10 @@
 'use strict';
 
 const get = require('lodash.get');
+const isString = require('lodash.isstring');
 const zlib = require('zlib');
 const log = require('@cumulus/common/log');
 const { inTestMode } = require('@cumulus/common/test-utils');
-const { justLocalRun } = require('@cumulus/common/local-helpers');
 const { Search, defaultIndexAlias } = require('./search');
 const { constructCollectionId, deconstructCollectionId } = require('../lib/utils');
 const { Granule, Pdr, Execution } = require('../models');
@@ -57,7 +57,7 @@ async function indexLog(esClient, payloads, index = defaultIndexAlias, type = 'l
         record = JSON.parse(p.message);
       }
       // level is number in elasticsearch
-      if (typeof record.level === 'string') record.level = log.convertLogLevel(record.level);
+      if (isString(record.level)) record.level = log.convertLogLevel(record.level);
     }
     catch (e) {
       record = {
@@ -450,8 +450,3 @@ module.exports = {
   granule,
   pdr
 };
-
-justLocalRun(() => {
-  // const a = {};
-  // handler(a, {}, (e, r) => log.info(e, r));
-});

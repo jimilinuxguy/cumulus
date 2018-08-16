@@ -1,7 +1,13 @@
 {
   "root": true,
-  "extends": "airbnb",
-  "plugins": ["eslint-plugin-jsdoc"],
+  "plugins": [
+    "jsdoc",
+    "lodash"
+  ],
+  "extends": [
+    "airbnb",
+    "plugin:lodash/recommended"
+  ],
   "parser": "babel-eslint",
   "env": {
     "node": true,
@@ -84,6 +90,10 @@
     ],
     "arrow-parens": ["error", "always"],
     "prefer-destructuring": "off",
-    "function-paren-newline": ["error", "consistent"]
+    "function-paren-newline": ["error", "consistent"],
+
+    "lodash/import-scope": ["warn", "method-package"],
+    "lodash/prefer-constant": ["warn", false],
+    "lodash/prefer-lodash-method": "off"
   }
 }
