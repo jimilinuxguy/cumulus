@@ -1,14 +1,11 @@
 'use strict';
 
 const _get = require('lodash.get');
-const { justLocalRun } = require('@cumulus/common/local-helpers');
 const { inTestMode } = require('@cumulus/common/test-utils');
-const log = require('@cumulus/common/log');
 const { handle } = require('../lib/response');
 const models = require('../models');
 const Collection = require('../es/collections');
 const RecordDoesNotExist = require('../lib/errors').RecordDoesNotExist;
-const examplePayload = require('../tests/data/collections_post.json');
 
 /**
  * List all collections.
@@ -138,27 +135,12 @@ function handler(event, context) {
   }
 
   return handle(event, context, !inTestMode() /* authCheck */, (cb) => {
-    if (event.httpMethod === 'GET' && event.pathParameters) {
-      return get(event, cb);
-    }
-    else if (event.httpMethod === 'POST') {
-      return post(event, cb);
-    }
-    else if (event.httpMethod === 'PUT' && event.pathParameters) {
-      return put(event, cb);
-    }
-    else if (event.httpMethod === 'DELETE' && event.pathParameters) {
-      return del(event, cb);
-    }
+    if (event.httpMethod === 'GET' && event.pathParameters) return get(event, cb);
+    if (event.httpMethod === 'POST') return post(event, cb);
+    if (event.httpMethod === 'PUT' && event.pathParameters) return put(event, cb);
+    if (event.httpMethod === 'DELETE' && event.pathParameters) return del(event, cb);
     return list(event, cb);
   });
 }
 
 module.exports = handler;
-
-justLocalRun(() => {
-  handler(examplePayload, {
-    succeed: (r) => log.error(r),
-    failed: (e) => log.error(e)
-  }, (e, r) => log.error(e, r));
-});

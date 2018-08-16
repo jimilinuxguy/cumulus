@@ -2,8 +2,6 @@
 
 'use strict';
 
-/* eslint-disable no-console */
-
 const program = require('commander');
 const { cliUtils } = require('@cumulus/common');
 const { lambda } = require('@cumulus/common/aws');
@@ -50,7 +48,9 @@ program
   .action((cmd) => {
     const missingOptions = cliUtils.findMissingOptions(cmd, ['host']);
     if (missingOptions.length === 0) {
-      es.getStatus(cmd.host).then((tasks) => console.log(JSON.stringify(tasks)));
+      es.getStatus(cmd.host)
+        .then((tasks) => console.log(JSON.stringify(tasks)))
+        .catch((err) => console.error(`Error getting status: ${err.message}`));
     }
     else {
       cliUtils.displayMissingOptionsMessage(missingOptions);
@@ -93,15 +93,17 @@ program
     const l = lambda();
     l.invoke({
       FunctionName: `${cmd.stack}-executeMigrations`
-    }).promise().then(console.log).catch(console.error);
+    }).promise()
+      .then(console.log)
+      .catch(console.error);
   });
 
 program
   .command('backup')
   .option('--table <table>', 'AWS DynamoDB table name')
   .option('--region <region>', 'AWS region name (default: us-east-1)')
-  .option('--directory <directory>', 'The directory to save the backups to.' +
-    ' Defaults to backups in the current directory')
+  .option('--directory <directory>', 'The directory to save the backups to.'
+    + ' Defaults to backups in the current directory')
   .description('Backup a given AWS folder to the current folder')
   .parse(process.argv)
   .action((cmd) => {
@@ -109,7 +111,9 @@ program
       throw new Error('table name is missing');
     }
 
-    backup(cmd.table, cmd.region, cmd.directory).then(console.log).catch(console.error);
+    backup(cmd.table, cmd.region, cmd.directory)
+      .then(console.log)
+      .catch(console.error);
   });
 
 program

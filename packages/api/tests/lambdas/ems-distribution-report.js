@@ -1,12 +1,13 @@
 'use strict';
 
-const { generateAndStoreDistributionReport } = require('../../lambdas/ems-distribution-report');
 const fs = require('fs-extra');
 const moment = require('moment');
 const path = require('path');
 const test = require('ava');
 const { aws } = require('@cumulus/common');
 const { testUtils: { randomString } } = require('@cumulus/common');
+
+const { generateAndStoreDistributionReport } = require('../../lambdas/ems-distribution-report');
 
 test.beforeEach(async (t) => {
   // Create the internal bucket
@@ -16,8 +17,9 @@ test.beforeEach(async (t) => {
   // Read in all of the server logs from the fixtures files
   const fixturesDirectory = path.join(__dirname, 'fixtures', 'ems-distribution-report');
   const serverLogFilenames = await fs.readdir(fixturesDirectory);
-  const serverLogs = await Promise.all(serverLogFilenames.map((serverFilename) =>
-    fs.readFile(path.join(fixturesDirectory, serverFilename), 'utf8')));
+  const serverLogs = await Promise.all(serverLogFilenames.map(
+    (serverFilename) => fs.readFile(path.join(fixturesDirectory, serverFilename), 'utf8')
+  ));
 
   // Upload the S3 server logs to the internal bucket
   t.context.logsPrefix = randomString();
