@@ -135,18 +135,10 @@ function handler(event, context) {
   }
 
   return handle(event, context, !inTestMode() /* authCheck */, (cb) => {
-    if (event.httpMethod === 'GET' && event.pathParameters) {
-      return get(event, cb);
-    }
-    else if (event.httpMethod === 'POST') {
-      return post(event, cb);
-    }
-    else if (event.httpMethod === 'PUT' && event.pathParameters) {
-      return put(event, cb);
-    }
-    else if (event.httpMethod === 'DELETE' && event.pathParameters) {
-      return del(event, cb);
-    }
+    if (event.httpMethod === 'GET' && event.pathParameters) return get(event, cb);
+    if (event.httpMethod === 'POST') return post(event, cb);
+    if (event.httpMethod === 'PUT' && event.pathParameters) return put(event, cb);
+    if (event.httpMethod === 'DELETE' && event.pathParameters) return del(event, cb);
     return list(event, cb);
   });
 }

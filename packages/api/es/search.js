@@ -29,13 +29,8 @@ class BaseSearch {
    * @returns {string} elasticsearch local address
    */
   static getLocalEsHost() {
-    if (process.env.LOCAL_ES_HOST) {
-      return `${process.env.LOCAL_ES_HOST}:9200`;
-    }
-    else if (process.env.LOCALSTACK_HOST) {
-      return `${process.env.LOCALSTACK_HOST}:4571`;
-    }
-
+    if (process.env.LOCAL_ES_HOST) return `${process.env.LOCAL_ES_HOST}:9200`;
+    if (process.env.LOCALSTACK_HOST) return `${process.env.LOCALSTACK_HOST}:4571`;
     return 'localhost:9200';
   }
 
@@ -188,12 +183,8 @@ class BaseSearch {
         body: body
       });
 
-      if (result.hits.total > 1) {
-        return { detail: 'More than one record was found!' };
-      }
-      else if (result.hits.total === 0) {
-        return { detail: 'Record not found' };
-      }
+      if (result.hits.total > 1) return { detail: 'More than one record was found!' };
+      if (result.hits.total === 0) return { detail: 'Record not found' };
 
       const resp = result.hits.hits[0]._source;
       resp._id = result.hits.hits[0]._id;
@@ -262,8 +253,8 @@ class BaseSearch {
     if (newObj.granules > 0) {
       newObj.progress = (
         (
-          (newObj.granulesStatus.completed + newObj.granulesStatus.failed) /
-          newObj.granules
+          (newObj.granulesStatus.completed + newObj.granulesStatus.failed)
+          / newObj.granules
         )
         * 100
       );

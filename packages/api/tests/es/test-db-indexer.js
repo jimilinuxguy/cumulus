@@ -30,8 +30,7 @@ process.env.ExecutionsTable = `${process.env.stackName}-ExecutionsTable`;
 
 
 function addSourceArn(tableName, records) {
-  const sourceArn = 'arn:aws:dynamodb:us-east-1:000:table/' +
-    `${tableName}/stream/2018-05-03T16:24:17.527`;
+  const sourceArn = `arn:aws:dynamodb:us-east-1:000:table/${tableName}/stream/2018-05-03T16:24:17.527`;
 
   // add eventSourceArn
   records.Records.forEach((record) => {
