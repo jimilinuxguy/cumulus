@@ -1,7 +1,13 @@
 {
   "root": true,
-  "extends": "airbnb",
-  "plugins": ["eslint-plugin-jsdoc"],
+  "plugins": [
+    "ava",
+    "jsdoc"
+  ],
+  "extends": [
+    "airbnb",
+    "plugin:ava/recommended"
+  ],
   "parser": "babel-eslint",
   "env": {
     "node": true,
@@ -84,6 +90,9 @@
     ],
     "arrow-parens": ["error", "always"],
     "prefer-destructuring": "off",
-    "function-paren-newline": ["error", "consistent"]
+    "function-paren-newline": ["error", "consistent"],
+
+    "ava/no-ignored-test-files": "off",
+    "ava/no-skip-test": "warn"
   }
 }
