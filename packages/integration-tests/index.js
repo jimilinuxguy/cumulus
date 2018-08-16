@@ -6,7 +6,7 @@ const Handlebars = require('handlebars');
 const uuidv4 = require('uuid/v4');
 const fs = require('fs-extra');
 const pLimit = require('p-limit');
-const { s3, sfn } = require('@cumulus/common/aws');
+const { describeExecution, s3, sfn } = require('@cumulus/common/aws');
 const sfnStep = require('./sfnStep');
 const { Provider, Collection, Rule } = require('@cumulus/api/models');
 
@@ -61,14 +61,15 @@ function getWorkflowArn(stackName, bucketName, workflowName) {
  * @param {string} executionArn - ARN of the execution
  * @returns {string} status
  */
-function getExecutionStatus(executionArn) {
-  return sfn().describeExecution({ executionArn }).promise()
-    .then((status) => status.status)
-    .catch((e) => {
-      // the execution may not be started yet
-      if (e.code === 'ExecutionDoesNotExist') return 'RUNNING';
-      throw e;
-    });
+async function getExecutionStatus(executionArn) {
+  try {
+    return (await describeExecution(executionArn)).status;
+  }
+  catch (err) {
+    // the execution may not be started yet
+    if (err.code === 'ExecutionDoesNotExist') return 'RUNNING';
+    throw err;
+  }
 }
 
 /**
@@ -79,28 +80,13 @@ function getExecutionStatus(executionArn) {
  */
 async function waitForCompletedExecution(executionArn) {
   let statusCheckCount = 0;
-  let waitPeriod = waitPeriodMs;
   let executionStatus = 'RUNNING';
 
   // While execution is running, check status on a time interval
-  /* eslint-disable no-await-in-loop */
   do {
-    await timeout(waitPeriod);
-    try {
-      executionStatus = await getExecutionStatus(executionArn);
-    }
-    catch (e) {
-      if (e.code === 'ThrottlingException') {
-        console.log(`Encountered step function describeExecution throttling exception with retry interval of ${waitPeriod}.`); // eslint-disable-line max-len
-        waitPeriod *= 2;
-        return 'RUNNING';
-      }
-
-      throw e;
-    }
+    executionStatus = await getExecutionStatus(executionArn); // eslint-disable-line no-await-in-loop, max-len
     statusCheckCount += 1;
   } while (executionStatus === 'RUNNING' && statusCheckCount < executionStatusNumRetries);
-  /* eslint-enable no-await-in-loop */
 
   if (executionStatus === 'RUNNING' && statusCheckCount >= executionStatusNumRetries) {
     //eslint-disable-next-line max-len

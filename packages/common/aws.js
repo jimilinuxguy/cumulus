@@ -618,6 +618,43 @@ exports.fromSfnExecutionName = (str, delimiter = '__') =>
     .map((s) => JSON.parse(`"${s}"`));
 
 /**
+ * Execute a function and, if a ThrottlingException is encountered, retry with
+ * an exponential backoff.
+ *
+ * @param {function} fn - a function that returns a Promise
+ * @param {Object} options - options
+ * @param {integer} options.retries - the maximum amount of times to retry the
+ *   operation. Default is 10.
+ * @param {integer} options.minTimeout - The number of milliseconds before
+ *   starting the first retry. Default is 1000.
+ * @param {integer} options.maxTimeout - The maximum number of milliseconds
+ *   between two retries. Default is Infinity.
+ * @returns {Promise} - the result of calling the function
+ */
+function retryThrottlingExceptions(fn, options = {}) {
+  return promiseRetry(
+    (retry) =>
+      fn()
+        .catch((err) => {
+          if (err.name === 'ThrottlingException') return retry();
+          throw err;
+        }),
+    options
+  );
+}
+
+/**
+ * Executes StepFunctions.describeExecution() and handles ThrottlingExceptions
+ *
+ * @param {string} executionArn - the executionArn to describe
+ * @returns {Promise<Object>} - the result of describeExecution
+ */
+exports.describeExecution = (executionArn) => retryThrottlingExceptions(
+  () => exports.sfn().describeExecution({ executionArn }).promise(),
+  'StepFunctions.describeExecution'
+);
+
+/**
  * Create an SQS Queue.  Properly handles localstack queue URLs
  *
  * @param {string} queueName - defaults to a random string
