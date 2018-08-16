@@ -1,7 +1,13 @@
 {
   "root": true,
-  "extends": "airbnb",
-  "plugins": ["eslint-plugin-jsdoc"],
+  "plugins": [
+    "array-func",
+    "jsdoc"
+  ],
+  "extends": [
+    "airbnb",
+    "plugin:array-func/recommended"
+  ],
   "parser": "babel-eslint",
   "env": {
     "node": true,
