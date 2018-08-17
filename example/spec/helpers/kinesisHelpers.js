@@ -30,6 +30,9 @@ const waitPeriodMs = 1000;
  * Helper to simplify common setup code.  wraps function in try catch block
  * that will exit tests if the initial setup conditions fail.
  *
+ * This should be removed once https://github.com/facebook/jest/issues/2713
+ * is fixed.
+ *
  * @param {Function} fn - function to execute
  * @param {iterable} args - arguments to pass to the function.
  * @returns {null} - no return
@@ -41,11 +44,9 @@ function tryCatchExit(fn, ...args) {
   catch (error) {
     console.log(error);
     console.log('Tests conditions can\'t get met...exiting.');
-    process.exit(1);
+    process.exit(1); // eslint-disable-line no-process-exit
   }
-  return null;
 }
-
 
 /**
  * returns the most recently executed KinesisTriggerTest workflows.
