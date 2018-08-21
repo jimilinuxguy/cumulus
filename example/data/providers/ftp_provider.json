@@ -1,7 +1,7 @@
 {
     "id": "ftp_provider",
     "protocol": "ftp",
-    "host": "172.31.5.97",
+    "host": "18.213.76.112",
     "username": "testuser",
     "password": "testpass",
     "globalConnectionLimit": 10
