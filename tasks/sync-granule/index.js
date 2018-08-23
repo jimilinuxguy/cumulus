@@ -88,15 +88,18 @@ exports.syncGranule = function syncGranule(event) {
 
   return download(ingest, downloadBucket, provider, input.granules)
     .then((granules) => {
+      log.debug('Dowload completed, call ingest.end()');
       if (ingest.end) ingest.end();
-
+      log.debug('ingest.end() completed');
       const output = { granules };
       if (collection && collection.process) output.process = collection.process;
       if (config.pdr) output.pdr = config.pdr;
 
       return output;
     }).catch((e) => {
+      log.debug('Caught error in Download. calling ingest.end()');
       if (ingest.end) ingest.end();
+      log.debug('After error, ingest.end() completed.');
 
       let errorToThrow = e;
       if (e.toString().includes('ECONNREFUSED')) {
