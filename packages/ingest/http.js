@@ -70,7 +70,7 @@ module.exports.httpMixin = (superclass) => class extends superclass {
             if (split[1].match(/^(.*\.[\w\d]{1,4})$/) !== null) {
               const name = split[1];
               let file_path;
-              if (this.collection.meta && this.collection.meta.files_path) {
+              if (this.collection && this.collection.meta && this.collection.meta.files_path) {
                 file_path = this.collection.meta.files_path;
               }
               else {
