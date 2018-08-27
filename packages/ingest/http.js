@@ -69,9 +69,16 @@ module.exports.httpMixin = (superclass) => class extends superclass {
           // Some providers provide files with one number after the dot (".") ex (tmtdayacz8110_5.6)
             if (split[1].match(/^(.*\.[\w\d]{1,4})$/) !== null) {
               const name = split[1];
+              let file_path;
+              if (this.collection.meta && this.collection.meta.files_path) {
+                file_path = this.collection.meta.files_path;
+              }
+              else {
+                file_path = this.path;
+              }
               files.push({
                 name,
-                path: this.path
+                path: file_path
               });
             }
           }
