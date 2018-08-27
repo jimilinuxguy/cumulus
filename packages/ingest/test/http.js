@@ -25,7 +25,6 @@ class MyTestDiscoveryClass {
     this.path = '/';
     this.provider = { encrypted: false };
     this.useList = useList;
-    this.collection = {};
   }
 }
 
@@ -58,8 +57,10 @@ test('returns files with provider path', async (t) => {
 
 test('returns files with optional path', async (t) => {
   const specialPath = '/narnia';
-  myTestHttpDiscoveryClass.collection.meta = {
-    files_path: specialPath
+  myTestHttpDiscoveryClass.collection = {
+    meta: {
+      files_path: specialPath
+    }
   };
 
   const actualFiles = await myTestHttpDiscoveryClass.list()
