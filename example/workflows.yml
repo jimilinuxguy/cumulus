@@ -432,7 +432,6 @@ IngestGranule:
       CumulusConfig:
         buckets: '{$.meta.buckets}'
         provider: '{$.meta.provider}'
-        collection: '{$.meta.collection}'
         stack: '{$.meta.stack}'
         downloadBucket: '{$.cumulus_meta.system_bucket}'
         pdr: '{$.meta.pdr}'
